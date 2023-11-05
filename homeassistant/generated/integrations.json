@@ -3221,6 +3221,12 @@
       "integration_type": "virtual",
       "supported_by": "hunterdouglas_powerview"
     },
+    "luxerone_residential": {
+      "name": "luxerOne",
+      "integration_type": "hub",
+      "config_flow": true,
+      "iot_class": "cloud_polling"
+    },
     "lw12wifi": {
       "name": "LAGUTE LW-12",
       "integration_type": "hub",

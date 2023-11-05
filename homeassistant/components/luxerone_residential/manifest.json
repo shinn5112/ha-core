@@ -1,0 +1,15 @@
+{
+  "domain": "luxerone_residential",
+  "name": "luxerOne",
+  "codeowners": ["@shinn5112"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://www.home-assistant.io/integrations/luxerone_residential",
+  "homekit": {},
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "loggers": [],
+  "requirements": ["luxerone==0.1"],
+  "ssdp": [],
+  "zeroconf": []
+}

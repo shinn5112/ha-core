@@ -1184,6 +1184,9 @@ luftdaten==0.7.4
 # homeassistant.components.lupusec
 lupupy==0.3.0
 
+# homeassistant.components.luxerone_residential
+luxerone==0.1
+
 # homeassistant.components.lw12wifi
 lw12==0.9.2
 

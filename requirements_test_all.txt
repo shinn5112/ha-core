@@ -919,6 +919,9 @@ loqedAPI==2.1.8
 # homeassistant.components.luftdaten
 luftdaten==0.7.4
 
+# homeassistant.components.luxerone_residential
+luxerone==0.1
+
 # homeassistant.components.scrape
 lxml==4.9.3
 
