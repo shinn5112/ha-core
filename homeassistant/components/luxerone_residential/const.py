@@ -3,7 +3,6 @@
 DOMAIN = "luxerone_residential"
 EVENT_DOMAIN = f"{DOMAIN}_event"
 ENTITY_ID_FORMAT = DOMAIN + ".{}"
-NAME_PREFIX = "packages_"
 
 TITLE = "title"
 USER = "username"

@@ -12,16 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import (
-    DOMAIN,
-    ENTITY_ID_FORMAT,
-    EVENT_DOMAIN,
-    ID,
-    NAME,
-    NAME_PREFIX,
-    PASS,
-    USER,
-)
+from .const import DOMAIN, ENTITY_ID_FORMAT, EVENT_DOMAIN, ID, NAME, PASS, USER
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,7 +48,7 @@ class LuxerOnePackageSensor(SensorEntity):
         self._hass = hass
         self._config_entry = config_entry
         self._attr_unique_id = self._config_entry.data[ID]
-        self._attr_name = NAME_PREFIX + self._config_entry.data[NAME]
+        self._attr_name = "Packages " + self._config_entry.data[NAME]
         self.entity_id = generate_entity_id(
             ENTITY_ID_FORMAT, name=self._attr_name, hass=hass
         )
@@ -131,7 +122,11 @@ class LuxerOnePackageSensor(SensorEntity):
                 }
                 self.hass.bus.async_fire(EVENT_DOMAIN, event_data)
 
-        except LuxerOneAPIException:
-            _LOGGER.error("Was unable to login to luxerOne for %s", {self.entity_id})
+        except LuxerOneAPIException as err:
+            _LOGGER.error(
+                "Was unable to login to luxerOne for %s because %s",
+                {self.entity_id},
+                err,
+            )
 
     # add service here later for updating the packages on demand. see https://developers.home-assistant.io/docs/dev_101_services
