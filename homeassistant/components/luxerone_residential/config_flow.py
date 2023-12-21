@@ -84,12 +84,12 @@ class LuxerOneConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    def __init__(self) -> None:
-        """Initialize a new LuxerOneConfigFlow."""
-        super().__init__()
-        self.reauth_entry = self.hass.config_entries.async_get_entry(
-            self.context["entry_id"]
-        )
+    # def __init__(self) -> None:
+    #     """Initialize a new LuxerOneConfigFlow."""
+    #     super().__init__()
+    #     self.reauth_entry = self.hass.config_entries.async_get_entry(
+    #         self.context["entry_id"]
+    #     )
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
