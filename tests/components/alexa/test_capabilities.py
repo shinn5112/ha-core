@@ -1,13 +1,19 @@
 """Test Alexa capabilities."""
+
 from typing import Any
 from unittest.mock import patch
 
 import pytest
 
 from homeassistant.components.alexa import smart_home
-from homeassistant.components.climate import ATTR_CURRENT_TEMPERATURE, HVACMode
+from homeassistant.components.climate import (
+    ATTR_CURRENT_TEMPERATURE,
+    ClimateEntityFeature,
+    HVACMode,
+)
 from homeassistant.components.lock import STATE_JAMMED, STATE_LOCKING, STATE_UNLOCKING
 from homeassistant.components.media_player import MediaPlayerEntityFeature
+from homeassistant.components.valve import ValveEntityFeature
 from homeassistant.components.water_heater import (
     ATTR_OPERATION_LIST,
     ATTR_OPERATION_MODE,
@@ -653,6 +659,143 @@ async def test_report_cover_range_value(hass: HomeAssistant) -> None:
     properties.assert_equal("Alexa.RangeController", "rangeValue", 0)
 
 
+async def test_report_valve_range_value(hass: HomeAssistant) -> None:
+    """Test RangeController reports valve position correctly."""
+    all_valve_features = (
+        ValveEntityFeature.OPEN
+        | ValveEntityFeature.CLOSE
+        | ValveEntityFeature.STOP
+        | ValveEntityFeature.SET_POSITION
+    )
+    hass.states.async_set(
+        "valve.fully_open",
+        "open",
+        {
+            "friendly_name": "Fully open valve",
+            "current_position": 100,
+            "supported_features": all_valve_features,
+        },
+    )
+    hass.states.async_set(
+        "valve.half_open",
+        "open",
+        {
+            "friendly_name": "Half open valve",
+            "current_position": 50,
+            "supported_features": all_valve_features,
+        },
+    )
+    hass.states.async_set(
+        "valve.closed",
+        "closed",
+        {
+            "friendly_name": "Closed valve",
+            "current_position": 0,
+            "supported_features": all_valve_features,
+        },
+    )
+
+    properties = await reported_properties(hass, "valve.fully_open")
+    properties.assert_equal("Alexa.RangeController", "rangeValue", 100)
+
+    properties = await reported_properties(hass, "valve.half_open")
+    properties.assert_equal("Alexa.RangeController", "rangeValue", 50)
+
+    properties = await reported_properties(hass, "valve.closed")
+    properties.assert_equal("Alexa.RangeController", "rangeValue", 0)
+
+
+@pytest.mark.parametrize(
+    (
+        "supported_features",
+        "has_mode_controller",
+        "has_range_controller",
+        "has_toggle_controller",
+    ),
+    [
+        (ValveEntityFeature(0), False, False, False),
+        (
+            ValveEntityFeature.OPEN
+            | ValveEntityFeature.CLOSE
+            | ValveEntityFeature.STOP,
+            True,
+            False,
+            True,
+        ),
+        (
+            ValveEntityFeature.OPEN,
+            True,
+            False,
+            False,
+        ),
+        (
+            ValveEntityFeature.CLOSE,
+            True,
+            False,
+            False,
+        ),
+        (
+            ValveEntityFeature.STOP,
+            False,
+            False,
+            True,
+        ),
+        (
+            ValveEntityFeature.SET_POSITION,
+            False,
+            True,
+            False,
+        ),
+        (
+            ValveEntityFeature.STOP | ValveEntityFeature.SET_POSITION,
+            False,
+            True,
+            True,
+        ),
+        (
+            ValveEntityFeature.OPEN
+            | ValveEntityFeature.CLOSE
+            | ValveEntityFeature.SET_POSITION,
+            False,
+            True,
+            False,
+        ),
+    ],
+)
+async def test_report_valve_controllers(
+    hass: HomeAssistant,
+    supported_features: ValveEntityFeature,
+    has_mode_controller: bool,
+    has_range_controller: bool,
+    has_toggle_controller: bool,
+) -> None:
+    """Test valve controllers are reported correctly."""
+    hass.states.async_set(
+        "valve.custom",
+        "opening",
+        {
+            "friendly_name": "Custom valve",
+            "current_position": 0,
+            "supported_features": supported_features,
+        },
+    )
+
+    properties = await reported_properties(hass, "valve.custom")
+
+    if has_mode_controller:
+        properties.assert_equal("Alexa.ModeController", "mode", "state.opening")
+    else:
+        properties.assert_not_has_property("Alexa.ModeController", "mode")
+    if has_range_controller:
+        properties.assert_equal("Alexa.RangeController", "rangeValue", 0)
+    else:
+        properties.assert_not_has_property("Alexa.RangeController", "rangeValue")
+    if has_toggle_controller:
+        properties.assert_equal("Alexa.ToggleController", "toggleState", "OFF")
+    else:
+        properties.assert_not_has_property("Alexa.ToggleController", "toggleState")
+
+
 async def test_report_climate_state(hass: HomeAssistant) -> None:
     """Test ThermostatController reports state correctly."""
     for auto_modes in (HVACMode.AUTO, HVACMode.HEAT_COOL):
@@ -783,6 +926,52 @@ async def test_report_climate_state(hass: HomeAssistant) -> None:
     msg = await reported_properties(hass, "climate.unsupported", True)
     assert msg["event"]["header"]["name"] == "ErrorResponse"
     assert msg["event"]["payload"]["type"] == "INTERNAL_ERROR"
+
+
+async def test_report_on_off_climate_state(hass: HomeAssistant) -> None:
+    """Test ThermostatController with on/off features reports state correctly."""
+    on_off_features = (
+        ClimateEntityFeature.TARGET_TEMPERATURE
+        | ClimateEntityFeature.TURN_ON
+        | ClimateEntityFeature.TURN_OFF
+    )
+    for auto_modes in (HVACMode.HEAT,):
+        hass.states.async_set(
+            "climate.onoff",
+            auto_modes,
+            {
+                "friendly_name": "Climate Downstairs",
+                "supported_features": on_off_features,
+                ATTR_CURRENT_TEMPERATURE: 34,
+                ATTR_UNIT_OF_MEASUREMENT: UnitOfTemperature.CELSIUS,
+            },
+        )
+        properties = await reported_properties(hass, "climate.onoff")
+        properties.assert_equal("Alexa.ThermostatController", "thermostatMode", "HEAT")
+        properties.assert_equal(
+            "Alexa.TemperatureSensor",
+            "temperature",
+            {"value": 34.0, "scale": "CELSIUS"},
+        )
+
+    for off_modes in [HVACMode.OFF]:
+        hass.states.async_set(
+            "climate.onoff",
+            off_modes,
+            {
+                "friendly_name": "Climate Downstairs",
+                "supported_features": on_off_features,
+                ATTR_CURRENT_TEMPERATURE: 34,
+                ATTR_UNIT_OF_MEASUREMENT: UnitOfTemperature.CELSIUS,
+            },
+        )
+        properties = await reported_properties(hass, "climate.onoff")
+        properties.assert_equal("Alexa.ThermostatController", "thermostatMode", "OFF")
+        properties.assert_equal(
+            "Alexa.TemperatureSensor",
+            "temperature",
+            {"value": 34.0, "scale": "CELSIUS"},
+        )
 
 
 async def test_report_water_heater_state(hass: HomeAssistant) -> None:
