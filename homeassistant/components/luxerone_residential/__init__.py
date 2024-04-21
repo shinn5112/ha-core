@@ -1,4 +1,5 @@
 """The luxerOne integration."""
+
 from __future__ import annotations
 
 from luxerone.client import LuxerOneClient
@@ -19,7 +20,7 @@ def _build_client(username: str, password: str) -> LuxerOneClient:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up luxerOne from a config entry."""
+    """Set up luxerOne instance from a config entry."""
 
     hass.data.setdefault(DOMAIN, {})
     try:

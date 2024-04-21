@@ -1,4 +1,6 @@
 """luxerOne sensors."""
+
+from datetime import timedelta
 import logging
 from typing import Any
 
@@ -15,6 +17,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN, ENTITY_ID_FORMAT, EVENT_DOMAIN, ID, NAME, PASS, USER
 
 _LOGGER = logging.getLogger(__name__)
+SCAN_INTERVAL = timedelta(minutes=10)
 
 
 async def async_setup_entry(
@@ -28,7 +31,7 @@ async def async_setup_entry(
         [
             LuxerOnePackageSensor(hass, luxerOneClient, config_entry),
         ],
-        True,
+        update_before_add=True,
     )
 
 

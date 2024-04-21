@@ -1,4 +1,5 @@
 """Config flow for luxerOne integration."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -11,7 +12,6 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
 from .const import DOMAIN, EMAIL, ID, NAME, PASS, TITLE, USER
@@ -45,9 +45,9 @@ class LuxerOneHub:
             self.email = userDetails.email
             self.user = username.split("@")[0].lower()
             self.title = f"luxerOne for {self.name}"
-            return True
         except LuxerOneAPIException:
             return False
+        return True
 
     def __str__(self) -> str:
         """To string method..."""
@@ -56,12 +56,6 @@ class LuxerOneHub:
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect."""
-    # If your PyPI package is not built with async, pass your methods
-    # to the executor:
-    # await hass.async_add_executor_job(
-    #     your_validate_func, data["username"], data["password"]
-    # )
-
     hub = LuxerOneHub(hass)
     if not await hass.async_add_executor_job(
         hub.authenticate, data["username"], data["password"]
@@ -93,7 +87,7 @@ class LuxerOneConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> config_entries.ConfigFlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -118,13 +112,15 @@ class LuxerOneConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
         )
 
-    async def async_step_reauth(self, user_input: Mapping[str, Any]) -> FlowResult:
+    async def async_step_reauth(
+        self, user_input: Mapping[str, Any]
+    ) -> config_entries.ConfigFlowResult:
         """Reauth step."""
         return await self.async_step_reauth_confirm(user_input=user_input)
 
     async def async_step_reauth_confirm(
         self, user_input: Mapping[str, Any]
-    ) -> FlowResult:
+    ) -> config_entries.ConfigFlowResult:
         """Dialog that informs the user that reauth is required."""
         if user_input is None:
             return self.async_show_form(
